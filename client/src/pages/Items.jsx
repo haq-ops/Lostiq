@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import API from '../api/axios';
 import ItemCard from '../components/ItemCard';
-import { FiSearch, FiFilter } from 'react-icons/fi';
+import { FiSearch } from 'react-icons/fi';
 
 const Items = () => {
+  const location = useLocation();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
@@ -12,6 +14,18 @@ const Items = () => {
     category: '',
     city: ''
   });
+
+  // URL query params read பண்ணு
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const typeFromURL = params.get('type') || '';
+    setFilters(prev => ({ ...prev, type: typeFromURL }));
+  }, [location.search]);
+
+  // filters மாறும்போது fetch பண்ணு
+  useEffect(() => {
+    fetchItems();
+  }, [filters.type]);
 
   const fetchItems = async () => {
     try {
@@ -31,10 +45,6 @@ const Items = () => {
     }
   };
 
-  useEffect(() => {
-    fetchItems();
-  }, []);
-
   const handleSearch = (e) => {
     e.preventDefault();
     fetchItems();
@@ -42,7 +52,7 @@ const Items = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      
+
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-primary">Browse Items</h1>
@@ -52,7 +62,7 @@ const Items = () => {
       {/* Search & Filter */}
       <form onSubmit={handleSearch} className="bg-white p-6 rounded-2xl shadow-md mb-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          
+
           {/* Search */}
           <div className="relative md:col-span-1">
             <input

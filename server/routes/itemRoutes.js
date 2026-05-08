@@ -9,9 +9,10 @@ const {
   getMyItems
 } = require('../controllers/itemController');
 const { protect } = require('../middleware/authMiddleware');
+const upload = require('../middleware/uploadMiddleware');
 
 router.get('/', getItems);
-router.post('/', protect, createItem);
+router.post('/', protect, upload.array('images', 3), createItem);
 router.get('/myitems', protect, getMyItems);
 router.get('/:id', getItemById);
 router.put('/:id', protect, updateItem);

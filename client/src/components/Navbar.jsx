@@ -1,7 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiUser, FiLogOut, FiPlusCircle, FiMenu, FiX } from 'react-icons/fi';
+import { FiLogOut, FiPlusCircle, FiMenu, FiX, FiShield } from 'react-icons/fi';
 import { useState } from 'react';
+import NotificationBell from './NotificationBell';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -28,18 +29,39 @@ const Navbar = () => {
           <Link to="/items?type=lost" className="hover:text-secondary transition">Lost Items</Link>
           <Link to="/items?type=found" className="hover:text-secondary transition">Found Items</Link>
           <Link to="/items" className="hover:text-secondary transition">All Items</Link>
+          <Link to="/map" className="hover:text-secondary transition">🗺️ Map</Link>
+          {user?.role === 'admin' && (
+            <Link to="/admin" className="hover:text-secondary transition flex items-center gap-1">
+              <FiShield size={16} /> Admin
+            </Link>
+          )}
         </div>
 
         {/* Desktop Right */}
         <div className="hidden md:flex items-center gap-4">
           {user ? (
             <>
-              <Link to="/post" className="flex items-center gap-1 bg-secondary px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition">
+              <Link
+                to="/post"
+                className="flex items-center gap-1 bg-secondary px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition"
+              >
                 <FiPlusCircle /> Post Item
               </Link>
-              <Link to="/dashboard" className="hover:text-secondary transition">
-                <FiUser size={20} />
+
+              {/* 🔔 Notification Bell */}
+              <NotificationBell />
+
+              {/* Profile Link */}
+              <Link
+                to="/profile"
+                className="hover:text-secondary transition"
+                title={user?.name}
+              >
+                <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-sm font-bold">
+                  {user?.name?.charAt(0).toUpperCase()}
+                </div>
               </Link>
+
               <button onClick={handleLogout} className="hover:text-secondary transition">
                 <FiLogOut size={20} />
               </button>
@@ -47,7 +69,10 @@ const Navbar = () => {
           ) : (
             <>
               <Link to="/login" className="hover:text-secondary transition">Login</Link>
-              <Link to="/register" className="bg-secondary px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition">
+              <Link
+                to="/register"
+                className="bg-secondary px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition"
+              >
                 Register
               </Link>
             </>
@@ -69,10 +94,17 @@ const Navbar = () => {
           <Link to="/items" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">All Items</Link>
           <Link to="/items?type=lost" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">Lost Items</Link>
           <Link to="/items?type=found" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">Found Items</Link>
+          <Link to="/map" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">🗺️ Map</Link>
           {user ? (
             <>
               <Link to="/post" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">Post Item</Link>
-              <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">Dashboard</Link>
+              <Link to="/profile" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">👤 My Profile</Link>
+              <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">📊 Dashboard</Link>
+              {user?.role === 'admin' && (
+                <Link to="/admin" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">
+                  👮 Admin Panel
+                </Link>
+              )}
               <button onClick={handleLogout} className="block text-red-400 hover:text-red-300">Logout</button>
             </>
           ) : (

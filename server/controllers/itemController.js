@@ -1,4 +1,6 @@
 const Item = require('../models/Item');
+const Notification = require('../models/Notification');
+const { sendMatchEmail } = require('../utils/emailService');
 
 // @desc    Create a new item post
 // @route   POST /api/items
@@ -6,16 +8,49 @@ const createItem = async (req, res) => {
   try {
     const { type, title, description, category, location, date } = req.body;
 
+    const images = req.files ? req.files.map(file => file.path) : [];
+
     const item = await Item.create({
       type,
       title,
       description,
       category,
-      location,
+      location: typeof location === 'string' ? JSON.parse(location) : location,
       date,
-      images: req.body.images || [],
+      images,
       postedBy: req.user._id
     });
+
+    // 📧 Found item post பண்ணும்போது — matching lost item owners-க்கு email அனுப்பு
+    if (type === 'found') {
+      const parsedLocation = typeof location === 'string' ? JSON.parse(location) : location;
+
+      const matchingLostItems = await Item.find({
+        type: 'lost',
+        status: 'open',
+        category: category,
+        'location.city': parsedLocation.city
+      }).populate('postedBy', 'name email');
+
+      for (const lostItem of matchingLostItems) {
+        if (lostItem.postedBy?.email) {
+          await sendMatchEmail(
+            lostItem.postedBy.email,
+            lostItem.postedBy.name,
+            item,
+            lostItem
+          );
+
+          await Notification.create({
+            user: lostItem.postedBy._id,
+            title: '🎉 Possible Match Found!',
+            message: `Someone found a ${category} in ${parsedLocation.city} — might be yours!`,
+            type: 'system',
+            link: `/items/${item._id}`
+          });
+        }
+      }
+    }
 
     res.status(201).json(item);
   } catch (error) {
@@ -79,7 +114,6 @@ const updateItem = async (req, res) => {
       return res.status(404).json({ message: 'Item not found' });
     }
 
-    // Only owner can update
     if (item.postedBy.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized' });
     }
@@ -106,7 +140,6 @@ const deleteItem = async (req, res) => {
       return res.status(404).json({ message: 'Item not found' });
     }
 
-    // Only owner or admin can delete
     if (item.postedBy.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not authorized' });
     }

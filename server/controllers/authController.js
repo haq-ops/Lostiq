@@ -12,13 +12,11 @@ const registerUser = async (req, res) => {
   try {
     const { name, email, password, phone, city } = req.body;
 
-    // Check if user exists
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create user
     const user = await User.create({
       name,
       email,
@@ -49,7 +47,6 @@ const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
@@ -92,4 +89,41 @@ const getUserProfile = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser, getUserProfile };
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+const updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const { name, phone, city, currentPassword, newPassword } = req.body;
+
+    // Password change
+    if (currentPassword && newPassword) {
+      const isMatch = await user.matchPassword(currentPassword);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Current password is wrong!' });
+      }
+      user.password = newPassword;
+    }
+
+    user.name = name || user.name;
+    user.phone = phone || user.phone;
+    user.city = city || user.city;
+
+    await user.save();
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      city: user.city,
+      role: user.role
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { registerUser, loginUser, getUserProfile, updateProfile };

@@ -29,10 +29,14 @@ const Login = () => {
     }
   };
 
+  const handleGoogleLogin = () => {
+    window.location.href = 'http://localhost:5000/api/auth/google';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
-        
+
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-primary">
             Lost<span className="text-secondary">iq</span>
@@ -75,6 +79,26 @@ const Login = () => {
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 my-6">
+          <hr className="flex-1 border-gray-200" />
+          <span className="text-gray-400 text-sm">OR</span>
+          <hr className="flex-1 border-gray-200" />
+        </div>
+
+        {/* Google Login Button */}
+        <button
+          onClick={handleGoogleLogin}
+          className="w-full flex items-center justify-center gap-3 border-2 border-gray-200 py-3 rounded-xl font-semibold text-gray-700 hover:border-primary hover:bg-gray-50 transition"
+        >
+          <img
+            src="https://www.google.com/favicon.ico"
+            alt="Google"
+            className="w-5 h-5"
+          />
+          Continue with Google
+        </button>
 
         <p className="text-center text-gray-500 mt-6 text-sm">
           Don't have an account?{' '}

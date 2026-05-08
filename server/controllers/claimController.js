@@ -1,5 +1,6 @@
 const Claim = require('../models/Claim');
 const Item = require('../models/Item');
+const Notification = require('../models/Notification');
 
 // @desc    Create a claim
 // @route   POST /api/claims
@@ -31,6 +32,15 @@ const createClaim = async (req, res) => {
       item: itemId,
       claimedBy: req.user._id,
       message
+    });
+
+    // 🔔 Notification — item owner-க்கு notify பண்ணு
+    await Notification.create({
+      user: item.postedBy,
+      title: 'New Claim Received! 📋',
+      message: `Someone claimed your item: "${item.title}"`,
+      type: 'claim',
+      link: `/items/${item._id}`
     });
 
     res.status(201).json(claim);
@@ -91,6 +101,26 @@ const updateClaimStatus = async (req, res) => {
       await Item.findByIdAndUpdate(claim.item._id, {
         status: 'resolved',
         claimedBy: claim.claimedBy
+      });
+
+      // 🔔 Notification — claim பண்ணவருக்கு notify பண்ணு
+      await Notification.create({
+        user: claim.claimedBy,
+        title: 'Claim Approved! ✅',
+        message: `Your claim for "${claim.item.title}" has been approved!`,
+        type: 'claim',
+        link: `/items/${claim.item._id}`
+      });
+    }
+
+    if (req.body.status === 'rejected') {
+      // 🔔 Notification — rejected-க்கும் notify பண்ணு
+      await Notification.create({
+        user: claim.claimedBy,
+        title: 'Claim Rejected ❌',
+        message: `Your claim for "${claim.item.title}" was rejected.`,
+        type: 'claim',
+        link: `/items/${claim.item._id}`
       });
     }
 

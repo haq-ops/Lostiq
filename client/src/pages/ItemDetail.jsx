@@ -4,6 +4,7 @@ import API from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { FiMapPin, FiCalendar, FiTag, FiUser, FiPhone } from 'react-icons/fi';
+import AIMatches from '../components/AIMatches';
 
 const ItemDetail = () => {
   const { id } = useParams();
@@ -59,7 +60,7 @@ const ItemDetail = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      
+
       {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
@@ -69,7 +70,7 @@ const ItemDetail = () => {
       </button>
 
       <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-        
+
         {/* Image */}
         <div className="h-72 bg-gray-100">
           {item.images?.length > 0 ? (
@@ -86,7 +87,7 @@ const ItemDetail = () => {
         </div>
 
         <div className="p-8">
-          
+
           {/* Badges */}
           <div className="flex gap-3 mb-4">
             <span className={`text-sm font-bold px-4 py-1 rounded-full ${
@@ -135,6 +136,16 @@ const ItemDetail = () => {
             )}
           </div>
 
+          {/* Chat Button */}
+          {item.status === 'open' && user && user._id !== item.postedBy?._id && (
+            <button
+              onClick={() => navigate(`/chat/${item._id}/${item.postedBy._id}`)}
+              className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition flex items-center gap-2 mb-4"
+            >
+              💬 Chat with Finder
+            </button>
+          )}
+
           {/* Claim Form */}
           {item.status === 'open' && user?._id !== item.postedBy?._id && (
             <div className="border-t pt-6">
@@ -173,6 +184,10 @@ const ItemDetail = () => {
               </button>
             </div>
           )}
+
+          {/* 🤖 AI Matches */}
+          <AIMatches itemId={item._id} itemType={item.type} />
+
         </div>
       </div>
     </div>
