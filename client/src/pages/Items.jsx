@@ -25,7 +25,7 @@ const Items = () => {
   // filters மாறும்போது fetch பண்ணு
   useEffect(() => {
     fetchItems();
-  }, [filters.type]);
+  }, [filters.type, filters.category, filters.city]);
 
   const fetchItems = async () => {
     try {
@@ -64,15 +64,13 @@ const Items = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
           {/* Search */}
-          <div className="relative md:col-span-1">
-            <input
-              type="text"
-              placeholder="Search items..."
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-primary"
-            />
-          </div>
+          <input
+            type="text"
+            placeholder="Search items..."
+            value={filters.search}
+            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-primary"
+          />
 
           {/* Type Filter */}
           <select
