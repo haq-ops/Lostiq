@@ -21,7 +21,14 @@ const userSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    default: ''
+    default: '',
+    validate: {
+      validator: function(v) {
+        if (!v) return true;
+        return /^[0-9]{10}$/.test(v);
+      },
+      message: 'Phone number must be 10 digits!'
+    }
   },
   city: {
     type: String,
@@ -48,7 +55,6 @@ userSchema.pre('save', async function() {
   this.password = await bcrypt.hash(this.password, 10);
 });
 
-// Compare password method
 userSchema.methods.matchPassword = async function(enteredPassword) {
   if (!this.password) return false;
   return await bcrypt.compare(enteredPassword, this.password);
