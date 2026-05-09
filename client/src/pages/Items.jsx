@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import API from '../api/axios';
 import ItemCard from '../components/ItemCard';
@@ -8,33 +8,19 @@ const Items = () => {
   const location = useLocation();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    search: '',
-    type: '',
-    category: '',
-    city: ''
-  });
+  const [type, setType] = useState('');
+  const [category, setCategory] = useState('');
+  const [city, setCity] = useState('');
+  const [search, setSearch] = useState('');
 
-  // URL query params read பண்ணு
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const typeFromURL = params.get('type') || '';
-    setFilters(prev => ({ ...prev, type: typeFromURL }));
-  }, [location.search]);
-
-  // filters மாறும்போது fetch பண்ணு
-  useEffect(() => {
-    fetchItems();
-  }, [filters.type, filters.category, filters.city]);
-
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async (t, cat, c, s) => {
     try {
       setLoading(true);
       const params = {};
-      if (filters.search) params.search = filters.search;
-      if (filters.type) params.type = filters.type;
-      if (filters.category) params.category = filters.category;
-      if (filters.city) params.city = filters.city;
+      if (s) params.search = s;
+      if (t) params.type = t;
+      if (cat) params.category = cat;
+      if (c) params.city = c;
 
       const { data } = await API.get('/items', { params });
       setItems(data);
@@ -43,39 +29,48 @@ const Items = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // URL change
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const typeFromURL = params.get('type') || '';
+    setType(typeFromURL);
+    fetchItems(typeFromURL, category, city, search);
+  }, [location.search]);
+
+  // Filter change
+  useEffect(() => {
+    fetchItems(type, category, city, search);
+  }, [type, category, city]);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchItems();
+    fetchItems(type, category, city, search);
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
 
-      {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-primary">Browse Items</h1>
         <p className="text-gray-500 mt-2">Search through lost and found items</p>
       </div>
 
-      {/* Search & Filter */}
       <form onSubmit={handleSearch} className="bg-white p-6 rounded-2xl shadow-md mb-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
-          {/* Search */}
           <input
             type="text"
             placeholder="Search items..."
-            value={filters.search}
-            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-primary"
           />
 
-          {/* Type Filter */}
           <select
-            value={filters.type}
-            onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+            value={type}
+            onChange={(e) => setType(e.target.value)}
             className="px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-primary"
           >
             <option value="">All Types</option>
@@ -83,10 +78,9 @@ const Items = () => {
             <option value="found">Found</option>
           </select>
 
-          {/* Category Filter */}
           <select
-            value={filters.category}
-            onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
             className="px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-primary"
           >
             <option value="">All Categories</option>
@@ -101,10 +95,9 @@ const Items = () => {
             <option value="other">Other</option>
           </select>
 
-          {/* City Filter */}
           <select
-            value={filters.city}
-            onChange={(e) => setFilters({ ...filters, city: e.target.value })}
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
             className="px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-primary"
           >
             <option value="">All Cities</option>
@@ -127,7 +120,6 @@ const Items = () => {
         </button>
       </form>
 
-      {/* Results */}
       {loading ? (
         <div className="text-center py-20">
           <div className="text-5xl mb-4">🔍</div>
