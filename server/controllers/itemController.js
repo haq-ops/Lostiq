@@ -21,39 +21,58 @@ const createItem = async (req, res) => {
       postedBy: req.user._id
     });
 
-    // 📧 Found item post பண்ணும்போது — matching lost item owners-க்கு email அனுப்பு
+    // 📧 Found item post பண்ணும்போது
     if (type === 'found') {
       const parsedLocation = typeof location === 'string' ? JSON.parse(location) : location;
+
+      console.log('🔍 Found item posted!');
+      console.log('Category:', category);
+      console.log('City:', parsedLocation?.city);
 
       const matchingLostItems = await Item.find({
         type: 'lost',
         status: 'open',
         category: category,
-        'location.city': parsedLocation.city
+        'location.city': parsedLocation?.city
       }).populate('postedBy', 'name email');
 
-      for (const lostItem of matchingLostItems) {
-        if (lostItem.postedBy?.email) {
-          await sendMatchEmail(
-            lostItem.postedBy.email,
-            lostItem.postedBy.name,
-            item,
-            lostItem
-          );
+      console.log('📋 Matching lost items found:', matchingLostItems.length);
 
-          await Notification.create({
-            user: lostItem.postedBy._id,
-            title: '🎉 Possible Match Found!',
-            message: `Someone found a ${category} in ${parsedLocation.city} — might be yours!`,
-            type: 'system',
-            link: `/items/${item._id}`
-          });
+      for (const lostItem of matchingLostItems) {
+        console.log('👤 Lost item owner email:', lostItem.postedBy?.email);
+
+        if (lostItem.postedBy?.email) {
+          try {
+            await sendMatchEmail(
+              lostItem.postedBy.email,
+              lostItem.postedBy.name,
+              item,
+              lostItem
+            );
+            console.log('📧 Email sent to:', lostItem.postedBy.email);
+          } catch (emailError) {
+            console.error('❌ Email error:', emailError.message);
+          }
+
+          try {
+            await Notification.create({
+              user: lostItem.postedBy._id,
+              title: '🎉 Possible Match Found!',
+              message: `Someone found a ${category} in ${parsedLocation?.city} — might be yours!`,
+              type: 'system',
+              link: `/items/${item._id}`
+            });
+            console.log('✅ Notification created for:', lostItem.postedBy.email);
+          } catch (notifError) {
+            console.error('❌ Notification error:', notifError.message);
+          }
         }
       }
     }
 
     res.status(201).json(item);
   } catch (error) {
+    console.error('❌ createItem error:', error.message);
     res.status(500).json({ message: error.message });
   }
 };
