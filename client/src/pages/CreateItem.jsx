@@ -18,7 +18,7 @@ const CreateItem = () => {
     category: 'other',
     city: '',
     area: '',
-    date: ''
+    date: new Date().toISOString().split('T')[0]
   });
 
   if (!user) {
@@ -57,9 +57,9 @@ const CreateItem = () => {
       data.append('title', formData.title);
       data.append('description', formData.description);
       data.append('category', formData.category);
-      data.append('location', JSON.stringify({ 
-        city: formData.city, 
-        area: formData.area 
+      data.append('location', JSON.stringify({
+        city: formData.city,
+        area: formData.area
       }));
       data.append('date', formData.date);
       images.forEach(image => data.append('images', image));
@@ -206,6 +206,7 @@ const CreateItem = () => {
               name="date"
               value={formData.date}
               onChange={handleChange}
+              max={new Date().toISOString().split('T')[0]}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-primary"
               required
             />
