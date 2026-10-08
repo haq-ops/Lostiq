@@ -29,16 +29,26 @@ const createItem = async (req, res) => {
       console.log('Category:', category);
       console.log('City:', parsedLocation?.city);
 
-      const matchingLostItems = await Item.find({
-        type: 'lost',
-        status: 'open',
-        category: category,
-        'location.city': parsedLocation?.city
-      }).populate('postedBy', 'name email');
+      // Case-insensitive match that ignores extra spaces around the value
+      const looseMatch = (value) =>
+        new RegExp(`^\\s*${String(value || '').trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
+
+      let matchingLostItems = [];
+      try {
+        matchingLostItems = await Item.find({
+          type: 'lost',
+          status: 'open',
+          category: looseMatch(category),
+          'location.city': looseMatch(parsedLocation?.city)
+        }).populate('postedBy', 'name email');
+      } catch (matchError) {
+        console.error('❌ Matching error (item was still saved):', matchError.message);
+      }
 
       console.log('📋 Matching lost items found:', matchingLostItems.length);
 
       for (const lostItem of matchingLostItems) {
+        console.log('🔎 Match lost item id:', lostItem._id.toString());
         console.log('👤 Lost item owner email:', lostItem.postedBy?.email);
 
         if (lostItem.postedBy?.email) {
