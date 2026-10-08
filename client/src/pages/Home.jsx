@@ -249,9 +249,6 @@ const Home = () => {
             <p className="text-gray-500">Simple 3 steps to reunite with your belongings</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
-            {/* Connector line */}
-            <div className="hidden md:block absolute top-10 left-1/3 right-1/3 h-0.5 bg-gradient-to-r from-primary to-secondary z-0"></div>
-
             {[
               { icon: '📝', step: '01', title: 'Report', desc: 'Post your lost or found item with photos and location details.', color: '#1E3A5F' },
               { icon: '🔍', step: '02', title: 'Search & Match', desc: 'Our AI automatically matches lost & found items by category and location.', color: '#FF6B35' },
