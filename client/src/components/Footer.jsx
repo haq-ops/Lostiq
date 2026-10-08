@@ -34,7 +34,7 @@ const Footer = () => {
       </div>
 
       <div className="text-center py-4 border-t border-gray-600 text-gray-400 text-sm">
-        © 2024 Lostiq. All rights reserved.
+        © 2026 Lostiq. All rights reserved.
       </div>
     </footer>
   );

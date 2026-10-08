@@ -1,5 +1,7 @@
-const express = require('express');
 const dotenv = require('dotenv');
+dotenv.config();
+
+const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -15,7 +17,6 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 
-dotenv.config();
 connectDB();
 
 const app = express();
@@ -23,25 +24,21 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
     methods: ['GET', 'POST']
   }
 });
 
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true
 }));
 app.use(express.json());
-
-// Session
 app.use(session({
-  secret: process.env.JWT_SECRET,
+  secret: process.env.SESSION_SECRET || 'lostiq_session',
   resave: false,
   saveUninitialized: false
 }));
-
-// Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -54,7 +51,6 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ai', aiRoutes);
 
-// Base route
 app.get('/', (req, res) => {
   res.send('Lostiq API is running...');
 });
@@ -67,12 +63,10 @@ io.on('connection', (socket) => {
 
   socket.on('join', (userId) => {
     onlineUsers.set(userId, socket.id);
-    console.log(`User ${userId} is online`);
   });
 
   socket.on('joinRoom', (roomId) => {
     socket.join(roomId);
-    console.log(`Socket joined room: ${roomId}`);
   });
 
   socket.on('sendMessage', (data) => {
@@ -86,7 +80,6 @@ io.on('connection', (socket) => {
         onlineUsers.delete(userId);
       }
     });
-    console.log('User disconnected:', socket.id);
   });
 });
 

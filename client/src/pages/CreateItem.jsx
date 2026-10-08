@@ -1,13 +1,74 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
 import API from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import { FiUpload, FiX } from 'react-icons/fi';
+import {
+  FiUpload, FiX, FiChevronDown, FiSearch, FiCheckCircle, FiSend,
+} from 'react-icons/fi';
+
+const MAX_IMAGES = 3;
+const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+
+const categories = [
+  { value: 'electronics', label: 'Electronics' },
+  { value: 'wallet', label: 'Wallet' },
+  { value: 'keys', label: 'Keys' },
+  { value: 'bag', label: 'Bag' },
+  { value: 'documents', label: 'Documents' },
+  { value: 'jewelry', label: 'Jewelry' },
+  { value: 'clothing', label: 'Clothing' },
+  { value: 'pets', label: 'Pets' },
+  { value: 'other', label: 'Other' },
+];
+
+const cities = [
+  'Colombo', 'Kandy', 'Galle', 'Jaffna',
+  'Negombo', 'Matara', 'Kurunegala', 'Anuradhapura',
+];
+
+const typeOptions = [
+  {
+    value: 'lost',
+    title: 'I lost something',
+    hint: 'Let people help you find it',
+    icon: FiSearch,
+    activeCard: 'border-red-400 bg-red-50/60',
+    activeIcon: 'bg-red-100 text-red-600',
+  },
+  {
+    value: 'found',
+    title: 'I found something',
+    hint: 'Help return it to the owner',
+    icon: FiCheckCircle,
+    activeCard: 'border-emerald-400 bg-emerald-50/60',
+    activeIcon: 'bg-emerald-100 text-emerald-600',
+  },
+];
+
+const inputClass =
+  'w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-primary focus:bg-white';
+
+const Label = ({ children, hint }) => (
+  <label className="mb-1.5 flex items-center justify-between text-sm font-medium text-gray-700">
+    {children}
+    {hint && <span className="text-xs font-normal text-gray-400">{hint}</span>}
+  </label>
+);
+
+const SelectField = ({ children, ...props }) => (
+  <div className="relative">
+    <select {...props} className={`${inputClass} appearance-none pr-10`}>
+      {children}
+    </select>
+    <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+  </div>
+);
 
 const CreateItem = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const submittingRef = useRef(false); // blocks double submit
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState([]);
   const [previews, setPreviews] = useState([]);
@@ -18,13 +79,10 @@ const CreateItem = () => {
     category: 'other',
     city: '',
     area: '',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
   });
 
-  if (!user) {
-    navigate('/login');
-    return null;
-  }
+  if (!user) return <Navigate to="/login" replace />;
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -32,236 +90,248 @@ const CreateItem = () => {
 
   const handleImages = (e) => {
     const files = Array.from(e.target.files);
-    if (files.length > 3) {
+    e.target.value = ''; // lets you pick the same file again
+
+    if (files.some((file) => file.size > MAX_SIZE)) {
+      toast.error('Each image must be under 5MB');
+      return;
+    }
+    if (images.length + files.length > MAX_IMAGES) {
       toast.error('Maximum 3 images allowed!');
       return;
     }
-    setImages(files);
-    const previewUrls = files.map(file => URL.createObjectURL(file));
-    setPreviews(previewUrls);
+
+    setImages((prev) => [...prev, ...files]);
+    setPreviews((prev) => [...prev, ...files.map((file) => URL.createObjectURL(file))]);
   };
 
   const removeImage = (index) => {
-    const newImages = images.filter((_, i) => i !== index);
-    const newPreviews = previews.filter((_, i) => i !== index);
-    setImages(newImages);
-    setPreviews(newPreviews);
+    URL.revokeObjectURL(previews[index]);
+    setImages(images.filter((_, i) => i !== index));
+    setPreviews(previews.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submittingRef.current) return; // already posting, ignore extra clicks
+    submittingRef.current = true;
     setLoading(true);
+
     try {
       const data = new FormData();
       data.append('type', formData.type);
-      data.append('title', formData.title);
-      data.append('description', formData.description);
+      data.append('title', formData.title.trim());
+      data.append('description', formData.description.trim());
       data.append('category', formData.category);
       data.append('location', JSON.stringify({
         city: formData.city,
-        area: formData.area
+        area: formData.area.trim(),
       }));
       data.append('date', formData.date);
-      images.forEach(image => data.append('images', image));
+      images.forEach((image) => data.append('images', image));
 
       await API.post('/items', data, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       toast.success('Item posted successfully!');
       navigate('/items');
     } catch (error) {
+      submittingRef.current = false; // allow retry only if it failed
       toast.error(error.response?.data?.message || 'Failed to post item');
-    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <div className="bg-white p-8 rounded-2xl shadow-lg">
+    <div className="mx-auto max-w-2xl px-4 py-10">
 
-        <h1 className="text-3xl font-bold text-primary mb-2">Post an Item</h1>
-        <p className="text-gray-500 mb-8">Report a lost or found item</p>
+      {/* Header */}
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-bold text-primary">Post an Item</h1>
+        <p className="mt-2 text-gray-500">Report something you lost or found</p>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8"
+      >
 
-          {/* Type */}
-          <div className="flex gap-4">
-            <button
-              type="button"
-              onClick={() => setFormData({ ...formData, type: 'lost' })}
-              className={`flex-1 py-3 rounded-xl font-semibold border-2 transition ${
-                formData.type === 'lost'
-                  ? 'border-red-500 bg-red-50 text-red-600'
-                  : 'border-gray-200 text-gray-500'
-              }`}
-            >
-              🔴 I Lost Something
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormData({ ...formData, type: 'found' })}
-              className={`flex-1 py-3 rounded-xl font-semibold border-2 transition ${
-                formData.type === 'found'
-                  ? 'border-green-500 bg-green-50 text-green-600'
-                  : 'border-gray-200 text-gray-500'
-              }`}
-            >
-              🟢 I Found Something
-            </button>
-          </div>
-
-          {/* Title */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              placeholder="e.g. Black leather wallet"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-primary"
-              required
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Describe the item in detail..."
-              rows={4}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-primary resize-none"
-              required
-            />
-          </div>
-
-          {/* Category */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-primary"
-            >
-              <option value="electronics">Electronics</option>
-              <option value="wallet">Wallet</option>
-              <option value="keys">Keys</option>
-              <option value="bag">Bag</option>
-              <option value="documents">Documents</option>
-              <option value="jewelry">Jewelry</option>
-              <option value="clothing">Clothing</option>
-              <option value="pets">Pets</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          {/* City & Area */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-              <select
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-primary"
-                required
+        {/* Lost / Found */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {typeOptions.map((opt) => {
+            const active = formData.type === opt.value;
+            const Icon = opt.icon;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setFormData({ ...formData, type: opt.value })}
+                className={`flex items-center gap-3 rounded-xl border-2 p-4 text-left transition ${
+                  active ? opt.activeCard : 'border-gray-200 hover:border-gray-300'
+                }`}
               >
-                <option value="">Select city</option>
-                <option>Colombo</option>
-                <option>Kandy</option>
-                <option>Galle</option>
-                <option>Jaffna</option>
-                <option>Negombo</option>
-                <option>Matara</option>
-                <option>Kurunegala</option>
-                <option>Anuradhapura</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Area</label>
-              <input
-                type="text"
-                name="area"
-                value={formData.area}
-                onChange={handleChange}
-                placeholder="e.g. Fort, Pettah"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-primary"
-              />
-            </div>
-          </div>
+                <span
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition ${
+                    active ? opt.activeIcon : 'bg-gray-100 text-gray-400'
+                  }`}
+                >
+                  <Icon size={18} />
+                </span>
+                <span>
+                  <span className="block text-sm font-semibold text-gray-900">{opt.title}</span>
+                  <span className="block text-xs text-gray-500">{opt.hint}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
-          {/* Date */}
+        {/* Title */}
+        <div>
+          <Label>Title</Label>
+          <input
+            type="text"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            placeholder="e.g. Black leather wallet"
+            maxLength={60}
+            className={inputClass}
+            required
+          />
+        </div>
+
+        {/* Description */}
+        <div>
+          <Label hint={`${formData.description.length}/500`}>Description</Label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            placeholder="Colour, brand, any marks or stickers, what was inside..."
+            rows={4}
+            maxLength={500}
+            className={`${inputClass} resize-none`}
+            required
+          />
+        </div>
+
+        {/* Category & Date */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date {formData.type === 'lost' ? 'Lost' : 'Found'}
-            </label>
+            <Label>Category</Label>
+            <SelectField name="category" value={formData.category} onChange={handleChange}>
+              {categories.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </SelectField>
+          </div>
+          <div>
+            <Label>Date {formData.type === 'lost' ? 'lost' : 'found'}</Label>
             <input
               type="date"
               name="date"
               value={formData.date}
               onChange={handleChange}
               max={new Date().toISOString().split('T')[0]}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-primary"
+              className={inputClass}
               required
             />
           </div>
+        </div>
 
-          {/* Image Upload */}
+        {/* City & Area */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Images (Max 3)
-            </label>
-            <label className="w-full border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center cursor-pointer hover:border-primary transition">
-              <FiUpload size={30} className="text-gray-400 mb-2" />
-              <span className="text-gray-500 text-sm">Click to upload images</span>
-              <span className="text-gray-400 text-xs mt-1">JPG, PNG, WEBP (max 5MB each)</span>
+            <Label>City</Label>
+            <SelectField name="city" value={formData.city} onChange={handleChange} required>
+              <option value="">Select city</option>
+              {cities.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </SelectField>
+          </div>
+          <div>
+            <Label hint="Optional">Area</Label>
+            <input
+              type="text"
+              name="area"
+              value={formData.area}
+              onChange={handleChange}
+              placeholder="e.g. Fort, Pettah"
+              className={inputClass}
+            />
+          </div>
+        </div>
+
+        {/* Photos */}
+        <div>
+          <Label hint={`${images.length}/${MAX_IMAGES}`}>Photos</Label>
+
+          {images.length < MAX_IMAGES && (
+            <label className="flex cursor-pointer flex-col items-center rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 px-6 py-8 text-center transition hover:border-primary hover:bg-white">
+              <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm">
+                <FiUpload size={20} className="text-gray-500" />
+              </span>
+              <span className="text-sm font-medium text-gray-700">Click to upload photos</span>
+              <span className="mt-1 text-xs text-gray-400">JPG, PNG or WEBP · up to 5MB each</span>
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 multiple
                 onChange={handleImages}
                 className="hidden"
               />
             </label>
+          )}
 
-            {/* Image Previews */}
-            {previews.length > 0 && (
-              <div className="flex gap-3 mt-3 flex-wrap">
-                {previews.map((preview, index) => (
-                  <div key={index} className="relative">
-                    <img
-                      src={preview}
-                      alt={`preview ${index}`}
-                      className="w-24 h-24 object-cover rounded-xl"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
-                    >
-                      <FiX />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          {previews.length > 0 && (
+            <div className="mt-3 grid grid-cols-3 gap-3">
+              {previews.map((preview, index) => (
+                <div key={preview} className="relative aspect-square overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
+                  <img
+                    src={preview}
+                    alt={`Preview ${index + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+                  {index === 0 && (
+                    <span className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
+                      Cover
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-gray-600 shadow-sm transition hover:bg-white hover:text-red-500"
+                    aria-label="Remove photo"
+                  >
+                    <FiX size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:opacity-90 transition disabled:opacity-50"
-          >
-            {loading ? 'Posting...' : '📝 Post Item'}
-          </button>
-        </form>
-      </div>
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? (
+            <>
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              Posting...
+            </>
+          ) : (
+            <>
+              <FiSend /> Post Item
+            </>
+          )}
+        </button>
+      </form>
     </div>
   );
 };

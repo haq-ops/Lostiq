@@ -8,7 +8,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Found item post பண்ணும்போது — matching lost item owners-க்கு email அனுப்பு
+
 const sendMatchEmail = async (toEmail, toName, foundItem, lostItem) => {
   try {
     await transporter.sendMail({
