@@ -1,0 +1,23 @@
+{
+  "name": "lostiq",
+  "version": "1.0.0",
+  "description": "> Sri Lanka's smartest lost & found platform powered by AI matching, real-time chat, and email notifications.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/haq-ops/Lostiq.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/haq-ops/Lostiq/issues"
+  },
+  "homepage": "https://github.com/haq-ops/Lostiq#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
+  }
+}

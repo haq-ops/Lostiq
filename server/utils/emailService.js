@@ -57,8 +57,23 @@ const sendMatchEmail = async (toEmail, toName, foundItem, lostItem) => {
     });
     console.log(`✅ Email sent to ${toEmail}`);
   } catch (error) {
-    console.error('Email error:', error);
+    console.error(`❌ Email FAILED to ${toEmail}: [${error.code || 'UNKNOWN'}] ${error.message}`);
+    throw error; // let the caller know it failed (itemController already catches this)
   }
 };
 
-module.exports = { sendMatchEmail };
+// Run once at server start to check the email connection
+const verifyEmailConnection = async () => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.error('❌ Email NOT configured: EMAIL_USER and/or EMAIL_PASS missing in server/.env');
+    return;
+  }
+  try {
+    await transporter.verify();
+    console.log(`✅ Email connection OK (sending as ${process.env.EMAIL_USER})`);
+  } catch (error) {
+    console.error(`❌ Email connection FAILED: [${error.code || 'UNKNOWN'}] ${error.message}`);
+  }
+};
+
+module.exports = { sendMatchEmail, verifyEmailConnection, transporter };

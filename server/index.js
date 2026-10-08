@@ -8,6 +8,7 @@ const { Server } = require('socket.io');
 const session = require('express-session');
 const passport = require('./config/passport');
 const connectDB = require('./config/db');
+const { verifyEmailConnection } = require('./utils/emailService');
 
 const authRoutes = require('./routes/authRoutes');
 const itemRoutes = require('./routes/itemRoutes');
@@ -86,4 +87,5 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  verifyEmailConnection();
 });
