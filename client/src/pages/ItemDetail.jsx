@@ -51,7 +51,7 @@ const ItemDetail = () => {
 
   if (loading) return (
     <div className="text-center py-20">
-      <div className="text-5xl mb-4">🔍</div>
+      <div className="text-5xl mb-4 animate-pulse">🔍</div>
       <p className="text-gray-500">Loading...</p>
     </div>
   );
