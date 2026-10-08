@@ -14,9 +14,10 @@ const AIMatches = ({ itemId, itemType }) => {
   const fetchMatches = async () => {
     try {
       const { data } = await API.get(`/ai/match/${itemId}`);
-      setMatches(data.matches);
+      setMatches(data.matches || []);
     } catch (error) {
       console.error(error);
+      setMatches([]);
     } finally {
       setLoading(false);
     }
@@ -68,7 +69,7 @@ const AIMatches = ({ itemId, itemType }) => {
             to={`/items/${item._id}`}
             className="flex items-center gap-4 p-3 border border-gray-100 rounded-xl hover:border-primary hover:bg-blue-50 transition"
           >
-            {/* Image or Placeholder */}
+            {/* Image */}
             <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
               {item.images?.[0] ? (
                 <img
