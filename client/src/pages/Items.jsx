@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import API from '../api/axios';
 import ItemCard from '../components/ItemCard';
-import { FiSearch, FiChevronDown, FiX, FiInbox } from 'react-icons/fi';
+import { FiSearch, FiChevronDown, FiX, FiInbox, FiPlusCircle, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
 
 const categories = [
   { value: 'electronics', label: 'Electronics' },
@@ -57,6 +57,7 @@ const Items = () => {
   const location = useLocation();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [type, setType] = useState('');
   const [category, setCategory] = useState('');
   const [city, setCity] = useState('');
@@ -65,6 +66,7 @@ const Items = () => {
   const fetchItems = useCallback(async (t, cat, c, s) => {
     try {
       setLoading(true);
+      setError(false);
       const params = {};
       if (s) params.search = s;
       if (t) params.type = t;
@@ -75,6 +77,7 @@ const Items = () => {
       setItems(data);
     } catch (error) {
       console.error(error);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -98,7 +101,8 @@ const Items = () => {
     fetchItems(type, category, city, search);
   };
 
-  const hasFilters = type || category || city || search;
+  // The All / Lost / Found tab on its own doesn't count as a filter
+  const hasFilters = Boolean(category || city || search);
 
   const clearFilters = () => {
     setType('');
@@ -177,7 +181,7 @@ const Items = () => {
         </div>
 
         <div className="flex items-center gap-4 text-sm text-gray-500">
-          {!loading && (
+          {!loading && !error && (
             <span>
               {items.length} {items.length === 1 ? 'item' : 'items'} found
             </span>
@@ -201,23 +205,52 @@ const Items = () => {
             <SkeletonCard key={i} />
           ))}
         </div>
+      ) : error ? (
+        <div className="rounded-2xl border border-dashed border-gray-200 bg-white py-16 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50">
+            <FiAlertCircle size={24} className="text-red-500" />
+          </div>
+          <h3 className="font-semibold text-gray-800">Couldn't load items. Please try again.</h3>
+          <button
+            type="button"
+            onClick={() => fetchItems(type, category, city, search)}
+            className="mt-4 inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+          >
+            <FiRefreshCw size={14} /> Retry
+          </button>
+        </div>
       ) : items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-gray-200 bg-white py-16 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100">
             <FiInbox size={24} className="text-gray-400" />
           </div>
-          <h3 className="font-semibold text-gray-800">No items found</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Try a different search or clear your filters.
-          </p>
-          {hasFilters && (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="mt-4 rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            >
-              Clear filters
-            </button>
+          {hasFilters ? (
+            <>
+              <h3 className="font-semibold text-gray-800">No items found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Try a different search or clear your filters.
+              </p>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="mt-4 rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              >
+                Clear filters
+              </button>
+            </>
+          ) : (
+            <>
+              <h3 className="font-semibold text-gray-800">No items yet</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Be the first to post a lost or found item.
+              </p>
+              <Link
+                to="/post"
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+              >
+                <FiPlusCircle /> Post an Item
+              </Link>
+            </>
           )}
         </div>
       ) : (

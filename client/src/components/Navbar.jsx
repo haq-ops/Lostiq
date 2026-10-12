@@ -26,10 +26,8 @@ const Navbar = () => {
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-6">
-          <Link to="/items?type=lost" className="hover:text-secondary transition">Lost Items</Link>
-          <Link to="/items?type=found" className="hover:text-secondary transition">Found Items</Link>
-          <Link to="/items" className="hover:text-secondary transition">All Items</Link>
-          <Link to="/map" className="hover:text-secondary transition">🗺️ Map</Link>
+          <Link to="/items" className="hover:text-secondary transition">Browse</Link>
+          <Link to="/map" className="hover:text-secondary transition">Map</Link>
           {user?.role === 'admin' && (
             <Link to="/admin" className="hover:text-secondary transition flex items-center gap-1">
               <FiShield size={16} /> Admin
@@ -62,7 +60,12 @@ const Navbar = () => {
                 </div>
               </Link>
 
-              <button onClick={handleLogout} className="hover:text-secondary transition">
+              <button
+                onClick={handleLogout}
+                title="Logout"
+                aria-label="Logout"
+                className="hover:text-secondary transition"
+              >
                 <FiLogOut size={20} />
               </button>
             </>
@@ -83,6 +86,8 @@ const Navbar = () => {
         <button
           className="md:hidden"
           onClick={() => setMenuOpen(!menuOpen)}
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
         >
           {menuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
         </button>
@@ -91,18 +96,16 @@ const Navbar = () => {
       {/* Mobile Menu */}
       {menuOpen && (
         <div className="md:hidden bg-primary border-t border-blue-800 px-4 py-4 space-y-3">
-          <Link to="/items" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">All Items</Link>
-          <Link to="/items?type=lost" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">Lost Items</Link>
-          <Link to="/items?type=found" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">Found Items</Link>
-          <Link to="/map" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">🗺️ Map</Link>
+          <Link to="/items" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">Browse</Link>
+          <Link to="/map" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">Map</Link>
           {user ? (
             <>
               <Link to="/post" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">Post Item</Link>
-              <Link to="/profile" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">👤 My Profile</Link>
-              <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">📊 Dashboard</Link>
+              <Link to="/profile" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">My Profile</Link>
+              <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">Dashboard</Link>
               {user?.role === 'admin' && (
                 <Link to="/admin" onClick={() => setMenuOpen(false)} className="block hover:text-secondary">
-                  👮 Admin Panel
+                  Admin Panel
                 </Link>
               )}
               <button onClick={handleLogout} className="block text-red-400 hover:text-red-300">Logout</button>

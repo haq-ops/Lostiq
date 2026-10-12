@@ -149,7 +149,7 @@ const Register = () => {
         </div>
 
         <button
-          onClick={() => window.location.href = 'http://localhost:5000/api/auth/google'}
+          onClick={() => window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/google`}
           className="w-full flex items-center justify-center gap-3 border-2 border-gray-200 py-3 rounded-xl font-semibold text-gray-700 hover:border-primary hover:bg-gray-50 transition"
         >
           <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />

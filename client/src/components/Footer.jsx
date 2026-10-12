@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { MapPin } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -27,8 +28,9 @@ const Footer = () => {
         <div>
           <h3 className="font-semibold mb-3">Contact</h3>
           <ul className="space-y-2 text-gray-300 text-sm">
-            <li>📧 support@lostiq.com</li>
-            <li>📍 Colombo, Sri Lanka</li>
+            <li className="flex items-center gap-2">
+              <MapPin size={16} /> Colombo, Sri Lanka
+            </li>
           </ul>
         </div>
       </div>
