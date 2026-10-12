@@ -5,7 +5,7 @@
 ![Lostiq Banner](https://via.placeholder.com/1200x400/1E3A5F/FF6B35?text=Lostiq+Lost+%26+Found+Platform)
 
 ## 🌐 Live Demo
-> Coming Soon — Deploying on Render + Vercel
+> https://lostiq.vercel.app/
 
 ## ✨ Features
 
