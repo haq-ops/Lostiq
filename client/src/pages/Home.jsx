@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiSearch, FiPlusCircle, FiMapPin, FiClock, FiArrowRight } from 'react-icons/fi';
+import { FiSearch, FiPlusCircle, FiArrowRight, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
+import {
+  FileText, Search, Handshake, Sparkles, MessageCircle, Map as MapIcon, Bell,
+  Package, Target, Smile,
+} from 'lucide-react';
 import API from '../api/axios';
+import ItemCard from '../components/ItemCard';
 
 const Home = () => {
   const [search, setSearch] = useState('');
   const [recentItems, setRecentItems] = useState([]);
-  const [stats, setStats] = useState({ total: 0, lost: 0, found: 0 });
+  const [recentError, setRecentError] = useState(false);
+  const [stats, setStats] = useState({ totalItems: 0, reunitedItems: 0, totalUsers: 0 });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -16,23 +22,26 @@ const Home = () => {
 
   const fetchRecentItems = async () => {
     try {
-      const { data } = await API.get('/items?limit=6');
-      setRecentItems(data.slice(0, 6));
+      setRecentError(false);
+      const { data } = await API.get('/items');
+      const newest = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setRecentItems(newest.slice(0, 6));
     } catch (error) {
       console.error(error);
+      setRecentError(true);
     }
   };
 
   const fetchStats = async () => {
     try {
-      const { data } = await API.get('/items');
-      const lost = data.filter(i => i.type === 'lost').length;
-      const found = data.filter(i => i.type === 'found').length;
-      setStats({ total: data.length, lost, found });
+      const { data } = await API.get('/stats');
+      setStats(data);
     } catch (error) {
       console.error(error);
     }
   };
+
+  const hasStats = stats.totalItems > 0 || stats.reunitedItems > 0 || stats.totalUsers > 0;
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -64,7 +73,7 @@ const Home = () => {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-white bg-opacity-10 backdrop-blur-sm border border-white border-opacity-20 text-white px-5 py-2 rounded-full text-sm font-medium mb-8">
             <span>🇱🇰</span>
-            <span>Sri Lanka's #1 Lost & Found Platform</span>
+            <span>Built for Sri Lanka</span>
           </div>
 
           {/* Heading */}
@@ -81,7 +90,7 @@ const Home = () => {
           </h1>
 
           <p className="text-gray-300 text-xl mb-12 max-w-2xl mx-auto leading-relaxed">
-            AI-powered lost & found platform for Sri Lanka. 
+            Smart lost & found platform for Sri Lanka. 
             Report items, get matched instantly, reunite with your belongings.
           </p>
 
@@ -136,109 +145,82 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Recently Posted */}
+      {recentError && (
+        <section className="pt-16 pb-4 px-4">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-2xl font-black text-gray-800 mb-8">Recently Posted</h2>
+            <div className="rounded-2xl border border-dashed border-gray-200 bg-white py-12 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50">
+                <FiAlertCircle size={24} className="text-red-500" />
+              </div>
+              <h3 className="font-semibold text-gray-800">Couldn't load items. Please try again.</h3>
+              <button
+                type="button"
+                onClick={fetchRecentItems}
+                className="mt-4 inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              >
+                <FiRefreshCw size={14} /> Retry
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+      {!recentError && recentItems.length > 0 && (
+        <section className="pt-16 pb-4 px-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h2 className="text-2xl font-black text-gray-800">Recently Posted</h2>
+                <p className="text-gray-500 text-sm mt-1">Latest lost & found reports</p>
+              </div>
+              <Link to="/items"
+                className="flex items-center gap-2 text-sm font-semibold hover:gap-3 transition-all duration-200"
+                style={{ color: '#FF6B35' }}>
+                View all items <FiArrowRight />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recentItems.map(item => (
+                <ItemCard key={item._id} item={item} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Stats Section */}
+      {hasStats && (
       <section className="py-16 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-3 gap-6">
             <div className="bg-white rounded-2xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
                 style={{ background: 'linear-gradient(135deg, #1E3A5F20, #1E3A5F10)' }}>
-                <span className="text-2xl">📦</span>
+                <Package size={24} color={'#1E3A5F'} />
               </div>
-              <h3 className="text-3xl font-black text-gray-800">{stats.total || '500'}+</h3>
+              <h3 className="text-3xl font-black text-gray-800">{stats.totalItems}</h3>
               <p className="text-gray-500 text-sm mt-1 font-medium">Items Posted</p>
             </div>
             <div className="bg-white rounded-2xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
                 style={{ background: 'linear-gradient(135deg, #FF6B3520, #FF6B3510)' }}>
-                <span className="text-2xl">🎯</span>
+                <Target size={24} color={'#FF6B35'} />
               </div>
-              <h3 className="text-3xl font-black" style={{ color: '#FF6B35' }}>{stats.found || '200'}+</h3>
+              <h3 className="text-3xl font-black" style={{ color: '#FF6B35' }}>{stats.reunitedItems}</h3>
               <p className="text-gray-500 text-sm mt-1 font-medium">Items Reunited</p>
             </div>
             <div className="bg-white rounded-2xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
                 style={{ background: 'linear-gradient(135deg, #22c55e20, #22c55e10)' }}>
-                <span className="text-2xl">😊</span>
+                <Smile size={24} color={'#22c55e'} />
               </div>
-              <h3 className="text-3xl font-black text-green-500">1000+</h3>
+              <h3 className="text-3xl font-black text-green-500">{stats.totalUsers}</h3>
               <p className="text-gray-500 text-sm mt-1 font-medium">Happy Users</p>
             </div>
           </div>
         </div>
       </section>
-
-      {/* Recent Items */}
-      {recentItems.length > 0 && (
-        <section className="py-8 px-4">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h2 className="text-2xl font-black text-gray-800">Recent Items</h2>
-                <p className="text-gray-500 text-sm mt-1">Latest lost & found reports</p>
-              </div>
-              <Link to="/items"
-                className="flex items-center gap-2 text-sm font-semibold hover:gap-3 transition-all duration-200"
-                style={{ color: '#FF6B35' }}>
-                View All <FiArrowRight />
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {recentItems.map(item => (
-                <Link
-                  key={item._id}
-                  to={`/items/${item._id}`}
-                  className="bg-white rounded-2xl overflow-hidden group hover:-translate-y-1 transition-all duration-300 border border-gray-100 hover:border-gray-200 hover:shadow-lg"
-                >
-                  <div className="h-44 bg-gray-100 overflow-hidden relative">
-                    {item.images?.[0] ? (
-                      <img
-                        src={item.images[0]}
-                        alt={item.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center"
-                        style={{ background: 'linear-gradient(135deg, #f8fafc, #e2e8f0)' }}>
-                        <span className="text-5xl opacity-50">📦</span>
-                      </div>
-                    )}
-                    <div className="absolute top-3 left-3">
-                      <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${
-                        item.type === 'lost'
-                          ? 'bg-red-500 text-white'
-                          : 'bg-green-500 text-white'
-                      }`}>
-                        {item.type === 'lost' ? '🔴 LOST' : '🟢 FOUND'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-xs text-gray-400 capitalize bg-gray-100 px-2 py-1 rounded-lg">
-                        {item.category}
-                      </span>
-                    </div>
-                    <h3 className="font-bold text-gray-800 truncate mb-2 group-hover:text-primary transition-colors">
-                      {item.title}
-                    </h3>
-                    <div className="flex items-center justify-between text-xs text-gray-400">
-                      <div className="flex items-center gap-1">
-                        <FiMapPin size={11} />
-                        <span>{item.location?.city}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <FiClock size={11} />
-                        <span>{new Date(item.createdAt).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
       )}
 
       {/* How It Works */}
@@ -250,9 +232,9 @@ const Home = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
             {[
-              { icon: '📝', step: '01', title: 'Report', desc: 'Post your lost or found item with photos and location details.', color: '#1E3A5F' },
-              { icon: '🔍', step: '02', title: 'Search & Match', desc: 'Our AI automatically matches lost & found items by category and location.', color: '#FF6B35' },
-              { icon: '🤝', step: '03', title: 'Reunite', desc: 'Chat with the finder and safely get your item back.', color: '#22c55e' },
+              { icon: FileText, step: '01', title: 'Report', desc: 'Post your lost or found item with photos and location details.', color: '#1E3A5F' },
+              { icon: Search, step: '02', title: 'Search & Match', desc: 'Lostiq automatically matches lost & found items by category and location.', color: '#FF6B35' },
+              { icon: Handshake, step: '03', title: 'Reunite', desc: 'Chat with the finder and safely get your item back.', color: '#22c55e' },
             ].map((item, i) => (
               <div key={i} className="bg-white rounded-2xl p-7 text-center relative z-10 border border-gray-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -261,12 +243,12 @@ const Home = () => {
                     {item.step}
                   </span>
                 </div>
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 mt-2"
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 mt-2"
                   style={{ background: `${item.color}15` }}>
-                  {item.icon}
+                  <item.icon size={28} color={item.color} />
                 </div>
                 <h3 className="text-lg font-bold text-gray-800 mb-2">{item.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
+                <p className="text-gray-600 text-sm leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -274,26 +256,25 @@ const Home = () => {
       </section>
 
       {/* Features */}
-      <section className="py-16 px-4" style={{ background: 'linear-gradient(135deg, #1E3A5F08, #FF6B3508)' }}>
+      <section className="py-10 px-4" style={{ background: 'linear-gradient(135deg, #1E3A5F08, #FF6B3508)' }}>
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl font-black text-gray-800 mb-3">Why Choose Lostiq?</h2>
-            <p className="text-gray-500">Powerful features to help you find what matters</p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <h2 className="text-lg font-bold text-gray-800 mb-5 text-center">Why Choose Lostiq?</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {[
-              { icon: '🤖', title: 'AI Matching', desc: 'Smart algorithm matches items automatically', color: '#6366f1' },
-              { icon: '💬', title: 'Real-time Chat', desc: 'Chat directly with finders instantly', color: '#0ea5e9' },
-              { icon: '🗺️', title: 'Map View', desc: 'See items on Sri Lanka map', color: '#10b981' },
-              { icon: '🔔', title: 'Notifications', desc: 'Email alerts for matching items', color: '#f59e0b' },
+              { icon: Sparkles, title: 'Smart Matching', desc: 'Matches items automatically', color: '#6366f1' },
+              { icon: MessageCircle, title: 'Real-time Chat', desc: 'Chat directly with finders', color: '#0ea5e9' },
+              { icon: MapIcon, title: 'Map View', desc: 'See items on a Sri Lanka map', color: '#10b981' },
+              { icon: Bell, title: 'Notifications', desc: 'Email alerts for matches', color: '#f59e0b' },
             ].map((feature, i) => (
-              <div key={i} className="bg-white rounded-2xl p-5 text-center hover:shadow-md transition-all duration-300 hover:-translate-y-1 border border-gray-100">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl mx-auto mb-3"
+              <div key={i} className="bg-white rounded-xl p-4 flex items-center gap-3 border border-gray-100">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                   style={{ background: `${feature.color}15` }}>
-                  {feature.icon}
+                  <feature.icon size={20} color={feature.color} />
                 </div>
-                <h3 className="font-bold text-gray-800 text-sm mb-1">{feature.title}</h3>
-                <p className="text-gray-500 text-xs leading-relaxed">{feature.desc}</p>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-gray-800 text-sm">{feature.title}</h3>
+                  <p className="text-gray-600 text-sm leading-snug">{feature.desc}</p>
+                </div>
               </div>
             ))}
           </div>
