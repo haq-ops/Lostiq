@@ -42,7 +42,7 @@ const sendMatchEmail = async (toEmail, toName, foundItem, lostItem) => {
             </div>
 
             <div style="text-align: center; margin: 30px 0;">
-              <a href="http://localhost:5173/items/${foundItem._id}" 
+              <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/items/${foundItem._id}" 
                 style="background: #FF6B35; color: white; padding: 15px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; font-size: 16px;">
                 View Found Item →
               </a>
