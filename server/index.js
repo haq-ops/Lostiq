@@ -22,6 +22,7 @@ const statsRoutes = require('./routes/statsRoutes');
 connectDB();
 
 const app = express();
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 const io = new Server(server, {
@@ -39,7 +40,11 @@ app.use(express.json());
 app.use(session({
   secret: process.env.SESSION_SECRET || 'lostiq_session',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+  }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
